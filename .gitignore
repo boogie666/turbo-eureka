@@ -185,6 +185,7 @@ pom.xml.asc
 
 ### Node ###
 # Logs
+node_modules/
 logs
 npm-debug.log*
 yarn-debug.log*
