@@ -7,8 +7,7 @@
   },
   "modules": [],
   "imageDirs": [
-    "images",
-    "resources"
+    "images"
   ],
   "platforms": {
     "ios": {
