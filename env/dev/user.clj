@@ -20,6 +20,9 @@
          :all-builds cljs-builds})
       (ra/cljs-repl))
 
+(defn start-repl []
+  (start-figwheel "ios"))
+
 (defn stop-figwheel
       "Stops figwheel"
       []
