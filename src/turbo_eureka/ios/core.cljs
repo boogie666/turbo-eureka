@@ -1,6 +1,9 @@
 (ns turbo-eureka.ios.core
   (:require [reagent.core :as r :refer [atom]]
-            [cljs.core.async :as a :refer [alts! <! >!]])
+            [cljs.core.async :as a :refer [alts! <! >!]]
+            [turbo-eureka.controller :as c]
+            [turbo-eureka.model :as m]
+            [turbo-eureka.styles :as s])
   (:require-macros [cljs.core.async.macros :as a :refer [go go-loop alt!]]))
 
 (def ReactNative (js/require "react-native"))
@@ -10,57 +13,128 @@
 (def view (r/adapt-react-class (.-View ReactNative)))
 (def image (r/adapt-react-class (.-Image ReactNative)))
 (def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
+
+(def scroll-view (r/adapt-react-class (.-ScrollView ReactNative)))
+(def activity-indicator (r/adapt-react-class (.-ActivityIndicator ReactNative)))
+
+(def DataSource (-> ReactNative .-ListView .-DataSource))
 (def web-view (r/adapt-react-class (.-WebView ReactNative)))
 
-(def logo-img (js/require "./images/cljs.png"))
+(def animated-view (r/adapt-react-class (-> ReactNative .-Animated .-View)))
+(def animated-event (-> ReactNative .-Animated .-event))
+(def animated-spring (-> ReactNative .-Animated .-spring))
 
-(defn alert [title]
-  (.alert (.-Alert ReactNative) title))
-
-
-(def x-webview-event
-  (comp (map clj->js)
-        (map #(.stringify js/JSON %))))
-
-(defn event-from-webview [e]
-  (-> (.parse js/JSON (-> e .-nativeEvent .-data))
-      (js->clj :keywordize-keys true)
-      :data))
-
-(defonce webview-events-chan (a/chan 1 x-webview-event))
+(def ValueXY (-> ReactNative .-Animated .-ValueXY))
+(def PanResponder (-> ReactNative .-PanResponder))
 
 
-
-(defn web-3d-view []
+(defn web-3d-view [style input-chan output-chan]
   (let [webview (atom nil)
+        input (a/chan 1 (comp (map (fn [message] {:data message}))
+                              (map clj->js)
+                              (map #(.stringify js/JSON %))))
+
+        output (a/chan 1 (comp (map #(-> % .-nativeEvent .-data))
+                               (map #(.parse js/JSON %))
+                               (map #(js->clj % :keywordize-keys true))
+                               (map :data)
+                               (map (fn [web-view-data] [:web-3d-view/web-event web-view-data]))))
         closer (a/chan)]
+
+    (a/pipe input-chan input)
+    (a/pipe output output-chan)
+
     (go-loop []
-      (let [[val c] (alts! [webview-events-chan closer])]
-        (when-not (= c closer)
+      (let [[val c] (alts! [input closer])]
+        (when-not (or (= c closer) (nil? val))
           (try
             (some-> @webview (.postMessage val))
             (catch :default e
               (.trace js/console e)))
           (recur))))
+
     (r/create-class
       {:reagent-render
-         (fn [webview-events-chan actions-chan]
+         (fn [style input-chan output-chan]
+           [view (merge style {:on-layout #(a/put! output-chan [:web-3d-view/on-layout {:layout (let [values (-> % .-nativeEvent .-layout)]
+                                                                                                  {:x (.-x values) :y (.-y values)
+                                                                                                   :width (.-width values) :height (.-height values)})}])})
+
             [web-view {:ref #(reset! webview %)
                        :source {:uri "web/index.html"}
-                       :on-message #(alert (:data (event-from-webview %)))}])
+                       :bounces false
+                       :scroll-enabled false
+                       :on-message #(a/put! output %)}]])
        :component-will-unmount
          (fn [_] (a/put! closer :close) (a/close! closer))})))
 
 
 
+
+
+
+(defn selection-view [action-channel]
+  (let [drag-model (atom {:dragging? false
+                          :pan (new ValueXY)})
+        panResponder (.create PanResponder #js{:onPanResponderStart #(swap! drag-model merge {:dragging? true})
+                                                :onPanResponderEnd #(swap! drag-model merge {:dragging? false})
+                                                :onStartShouldSetPanResponder (constantly true)
+                                                :onPanResponderMove (animated-event #js[nil, #js{:dx (.-x (:pan @drag-model)) :dy (.-y (:pan @drag-model))}])
+                                                :onPanResponderRelease (fn [e]
+                                                                        (let [drop-position {:x (-> e .-nativeEvent .-pageX) :y (-> e .-nativeEvent .-pageY)}]
+                                                                            (a/put! action-channel [:selection-view/drop-item {:item (:selected-item @m/model) :at drop-position}])))})]
+
+    (fn [action-channel]
+      (let [dragging? (:dragging? @drag-model)
+            pan (:pan @drag-model)]
+        (when (-> @m/model :selected-item)
+          (let [item (some-> @m/model :selected-item)]
+            [view {:style (-> s/selection-view :main)}
+              [view {:style (-> s/selection-view :item)}
+                  [animated-view
+                    (merge (js->clj (.-panHandlers panResponder)) (when dragging? {:style [(.getLayout pan) {:position "absolute"}]}))
+                    [view {:style (-> s/selection-view :handle)}
+                      [image {:style (-> s/selection-view :image) :source (:img item)}]
+                      [text (:name item)]]]]
+
+              [view {:style (-> s/selection-view :details)}
+                [text (:description item)]]]))))))
+
+
+
+(defn list-view-item [action-channel item]
+  [touchable-highlight {:on-press #(a/put! action-channel [:list-item-view/select item])}
+    [view {:style s/list-view-item}
+      [image {:style s/list-view-item-image :source (:img item)}]
+      [text {:style s/list-view-item-text} (:name item)]]])
+
+(defn list-view []
+  (let [items-loaded? (:products-loaded? @m/model)
+        items         (:products @m/model)]
+      (if-not items-loaded?
+        [view {:style s/list-view-loading}
+          [activity-indicator]]
+        [scroll-view {:style s/list-view}
+          (map-indexed (fn [idx i] ^{:key (str idx (:id i))} [list-view-item c/action-channel i]) items)])))
+
 (defn app-root []
   [view {:flex 1}
-    [web-3d-view]
-    [touchable-highlight
-     {:on-press #(a/put! webview-events-chan {:message "Hello"})}
-     [text "click me"]]])
+    [view {:style s/main-view}
+      [list-view]
+      [web-3d-view {:style s/web-3d-view} c/web-input-events c/action-channel]]
+    [selection-view c/action-channel]])
 
 
+;;fake it
+(go (<! (a/timeout 1000))
+    (println "Loaded products")
+    (>! c/action-channel
+        [:async/loaded-products
+           (take 100
+              (cycle [{:name "Active Dress" :id "3212344" :description "The most active of all the dresses" :img (js/require "./images/Active_Dress_1.jpg")}
+                      {:name "Floral Dress" :id "3212345" :description "Pritty pritty flowers, i like flowers." :img (js/require "./images/Floral_Dress_1.jpg")}
+                      {:name "Pattern Shirt" :id "3212346" :description "Cool design bro... much like." :img (js/require "./images/Pattern_Shirt_1.jpg")}
+                      {:name "Cotton Top" :id "3212347" :description "Cotton... Mostly." :img (js/require "./images/Cotton_Top_1.jpg")}]))]))
 
 
 (defn init []
