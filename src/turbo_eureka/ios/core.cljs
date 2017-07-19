@@ -4,7 +4,7 @@
             [turbo-eureka.controller :as c]
             [turbo-eureka.model :as m]
             [turbo-eureka.styles :as s]
-            [turbo-eureka.core.components :as comp :refer [view text image touchable-highlight
+            [turbo-eureka.core.components :as comp :refer [view text image touchable-opacity
                                                            app-registry web-view scroll-view activity-indicator
                                                            animated-view animated-event animated-spring
                                                            ValueXY PanResponder DataSource]])
@@ -89,7 +89,7 @@
 
 
 (defn list-view-item [action-channel item]
-  [touchable-highlight {:on-press #(a/put! action-channel [:list-item-view/select item])}
+  [touchable-opacity {:on-press #(a/put! action-channel [:list-item-view/select item])}
     [view {:style s/list-view-item}
       [image {:style s/list-view-item-image :source (:img item)}]
       [text {:style s/list-view-item-text} (:name item)]]])
