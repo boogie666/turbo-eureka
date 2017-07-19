@@ -3,29 +3,13 @@
             [cljs.core.async :as a :refer [alts! <! >!]]
             [turbo-eureka.controller :as c]
             [turbo-eureka.model :as m]
-            [turbo-eureka.styles :as s])
+            [turbo-eureka.styles :as s]
+            [turbo-eureka.core.components :refer [view text image touchable-highlight
+                                                  app-registry web-view scroll-view activity-indicator
+                                                  animated-view animated-event animated-spring
+                                                  ValueXY PanResponder]])
   (:require-macros [cljs.core.async.macros :as a :refer [go go-loop alt!]]))
 
-(def ReactNative (js/require "react-native"))
-
-(def app-registry (.-AppRegistry ReactNative))
-(def text (r/adapt-react-class (.-Text ReactNative)))
-(def view (r/adapt-react-class (.-View ReactNative)))
-(def image (r/adapt-react-class (.-Image ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
-
-(def scroll-view (r/adapt-react-class (.-ScrollView ReactNative)))
-(def activity-indicator (r/adapt-react-class (.-ActivityIndicator ReactNative)))
-
-(def DataSource (-> ReactNative .-ListView .-DataSource))
-(def web-view (r/adapt-react-class (.-WebView ReactNative)))
-
-(def animated-view (r/adapt-react-class (-> ReactNative .-Animated .-View)))
-(def animated-event (-> ReactNative .-Animated .-event))
-(def animated-spring (-> ReactNative .-Animated .-spring))
-
-(def ValueXY (-> ReactNative .-Animated .-ValueXY))
-(def PanResponder (-> ReactNative .-PanResponder))
 
 
 (defn web-3d-view [style input-chan output-chan]

@@ -20,6 +20,7 @@
   (swap! m/model assoc :selected-item payload))
 
 (defmethod process-action! :async/loaded-products [[_ products]]
+  (println products)
   (swap! m/model merge {:products products
                         :products-loaded? true}))
 
