@@ -111,7 +111,6 @@
 
 ;;fake it
 (go (<! (a/timeout 1000))
-    (println "Loaded products")
     (>! c/action-channel
         [:async/loaded-products
            (take 100
