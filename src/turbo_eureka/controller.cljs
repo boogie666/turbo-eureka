@@ -1,8 +1,8 @@
 (ns turbo-eureka.controller
   (:require [turbo-eureka.model :as m]
-            [cljs.core.async :as a :refer [chan put! <! >!]]
+            [cljs.core.async :as a :refer [put! <!]]
             [turbo-eureka.styles :as s])
-  (:require-macros [cljs.core.async.macros :as a :refer [go go-loop alt!]]))
+  (:require-macros [cljs.core.async.macros :as a :refer [go-loop]]))
 
 
 

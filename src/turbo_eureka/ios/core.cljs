@@ -4,10 +4,10 @@
             [turbo-eureka.controller :as c]
             [turbo-eureka.model :as m]
             [turbo-eureka.styles :as s]
-            [turbo-eureka.core.components :refer [view text image touchable-highlight
-                                                  app-registry web-view scroll-view activity-indicator
-                                                  animated-view animated-event animated-spring
-                                                  ValueXY PanResponder]])
+            [turbo-eureka.core.components :as comp :refer [view text image touchable-highlight
+                                                           app-registry web-view scroll-view activity-indicator
+                                                           animated-view animated-event animated-spring
+                                                           ValueXY PanResponder DataSource]])
   (:require-macros [cljs.core.async.macros :as a :refer [go go-loop alt!]]))
 
 
@@ -40,9 +40,11 @@
     (r/create-class
       {:reagent-render
          (fn [style input-chan output-chan]
-           [view (merge style {:on-layout #(a/put! output-chan [:web-3d-view/on-layout {:layout (let [values (-> % .-nativeEvent .-layout)]
-                                                                                                  {:x (.-x values) :y (.-y values)
-                                                                                                   :width (.-width values) :height (.-height values)})}])})
+           [view (merge style {:on-layout #(let [values (-> % .-nativeEvent .-layout)
+                                                 layout {:layout {:x (.-x values) :y (.-y values)
+                                                                  :width (.-width values) :height (.-height values)}}]
+                                              (a/put! output-chan [:web-3d-view/on-layout layout]))})
+
 
             [web-view {:ref #(reset! webview %)
                        :source {:uri "web/index.html"}
@@ -64,9 +66,9 @@
                                                 :onPanResponderEnd #(swap! drag-model merge {:dragging? false})
                                                 :onStartShouldSetPanResponder (constantly true)
                                                 :onPanResponderMove (animated-event #js[nil, #js{:dx (.-x (:pan @drag-model)) :dy (.-y (:pan @drag-model))}])
-                                                :onPanResponderRelease (fn [e]
-                                                                        (let [drop-position {:x (-> e .-nativeEvent .-pageX) :y (-> e .-nativeEvent .-pageY)}]
-                                                                            (a/put! action-channel [:selection-view/drop-item {:item (:selected-item @m/model) :at drop-position}])))})]
+                                                :onPanResponderRelease #(let [drop-position {:x (-> % .-nativeEvent .-pageX) :y (-> % .-nativeEvent .-pageY)}
+                                                                              drop-event {:item (:selected-item @m/model) :at drop-position}]
+                                                                          (a/put! action-channel [:selection-view/drop-item drop-event]))})]
 
     (fn [action-channel]
       (let [dragging? (:dragging? @drag-model)
@@ -93,13 +95,17 @@
       [text {:style s/list-view-item-text} (:name item)]]])
 
 (defn list-view []
-  (let [items-loaded? (:products-loaded? @m/model)
-        items         (:products @m/model)]
-      (if-not items-loaded?
-        [view {:style s/list-view-loading}
-          [activity-indicator]]
-        [scroll-view {:style s/list-view}
-          (map-indexed (fn [idx i] ^{:key (str idx (:id i))} [list-view-item c/action-channel i]) items)])))
+  (let [dataSource (new DataSource #js{:rowHasChanged not=})]
+    (fn []
+      (let [items-loaded? (:products-loaded? @m/model)
+            items         (:products @m/model)]
+          (if-not items-loaded?
+            [view {:style s/list-view-loading}
+              [activity-indicator]]
+            (let [ds (.cloneWithRows dataSource (clj->js items))]
+              [comp/list-view {:style s/list-view
+                               :dataSource ds
+                               :renderRow #(r/as-element [list-view-item c/action-channel (js->clj % :keywordize-keys true)])}]))))))
 
 (defn app-root []
   [view {:flex 1}
@@ -109,7 +115,7 @@
     [selection-view c/action-channel]])
 
 
-;;fake it
+;;fake a backend call
 (go (<! (a/timeout 1000))
     (>! c/action-channel
         [:async/loaded-products
