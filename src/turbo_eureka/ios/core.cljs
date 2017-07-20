@@ -12,6 +12,15 @@
 
 (enable-console-print!)
 
+
+
+(defn web-view-event [{:keys [event] :as raw-event}]
+  (if (nil? event)
+    [:web-3d-view/bad-messages-from-viewer raw-event]
+    (let [event-type (keyword "web-3d-view" event)]
+      [event-type raw-event])))
+
+
 (defn web-3d-view [style input-chan output-chan]
   (let [webview (atom nil)
         input (a/chan 1 (comp (map (fn [message] {:data message}))
@@ -22,7 +31,7 @@
                                (map #(.parse js/JSON %))
                                (map #(js->clj % :keywordize-keys true))
                                (map :data)
-                               (map (fn [web-view-data] [:web-3d-view/web-event web-view-data]))))
+                               (map web-view-event)))
         closer (a/chan)]
 
     (a/pipe input-chan input)
@@ -50,7 +59,14 @@
                        :source {:uri "http://10.0.1.28:9090/ui/new_3d.html?id=fixture1"}
                        :bounces false
                        :scroll-enabled false
-                       :on-message #(a/put! output %)}]])
+                       :on-message #(a/put! output %)}]
+            (when-let [error (:web-view-event-error @m/model)]
+              [view {:flex 1}
+                [text {:style {:background-color "red" :color "white"}}
+                  (:error-message error)]
+                [text {:style {:background-color "red" :color "white"}}
+                  (:error-details error)]])])
+
        :component-will-unmount
          (fn [_] (a/put! closer :close) (a/close! closer))})))
 
