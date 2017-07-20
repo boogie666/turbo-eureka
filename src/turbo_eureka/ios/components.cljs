@@ -1,4 +1,4 @@
-(ns turbo-eureka.core.components
+(ns turbo-eureka.ios.components
   (:require [reagent.core :as r]))
 
 (def ReactNative (js/require "react-native"))

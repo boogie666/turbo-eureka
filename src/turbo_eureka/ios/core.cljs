@@ -4,7 +4,7 @@
             [turbo-eureka.controller :as c]
             [turbo-eureka.model :as m]
             [turbo-eureka.styles :as s]
-            [turbo-eureka.core.components :as comp :refer [view text image touchable-opacity
+            [turbo-eureka.ios.components :as comp :refer [view text image touchable-opacity
                                                            app-registry web-view scroll-view activity-indicator
                                                            animated-view animated-event animated-spring
                                                            ValueXY PanResponder DataSource]])
@@ -47,7 +47,7 @@
 
 
             [web-view {:ref #(reset! webview %)
-                       :source {:uri "web/index.html"}
+                       :source {:uri "http://10.0.1.28:9090/ui/new_3d.html?id=fixture1"}
                        :bounces false
                        :scroll-enabled false
                        :on-message #(a/put! output %)}]])
@@ -114,10 +114,10 @@
     (>! c/action-channel
         [:async/loaded-products
            (take 100
-              (cycle [{:name "Active Dress" :id "3212344" :description "The most active of all the dresses" :img (js/require "./images/Active_Dress_1.jpg")}
-                      {:name "Floral Dress" :id "3212345" :description "Pritty pritty flowers, i like flowers." :img (js/require "./images/Floral_Dress_1.jpg")}
-                      {:name "Pattern Shirt" :id "3212346" :description "Cool design bro... much like." :img (js/require "./images/Pattern_Shirt_1.jpg")}
-                      {:name "Cotton Top" :id "3212347" :description "Cotton... Mostly." :img (js/require "./images/Cotton_Top_1.jpg")}]))]))
+              (cycle [{:name "Active Dress" :name "option1" :id "3212344" :description "The most active of all the dresses" :img (js/require "./images/Active_Dress_1.jpg")}
+                      {:name "Floral Dress" :name "option2" :id "3212345" :description "Pritty pritty flowers, i like flowers." :img (js/require "./images/Floral_Dress_1.jpg")}
+                      {:name "Pattern Shirt" :name "option3" :id "3212346" :description "Cool design bro... much like." :img (js/require "./images/Pattern_Shirt_1.jpg")}
+                      {:name "Cotton Top" :name "option4" :id "3212347" :description "Cotton... Mostly." :img (js/require "./images/Cotton_Top_1.jpg")}]))]))
 
 
 (defn init []
