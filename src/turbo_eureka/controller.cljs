@@ -48,7 +48,7 @@
 
     (when (in-webview-bounds? layout drop-location)
       (put! web-input-events {:position drop-location
-                              :id (-> payload :item :name)}))))
+                              :id (-> payload :item :option-name)}))))
 
 (defonce event-loop
   (go-loop []

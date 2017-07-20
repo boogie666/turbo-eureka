@@ -114,10 +114,10 @@
     (>! c/action-channel
         [:async/loaded-products
            (take 100
-              (cycle [{:name "Active Dress" :name "option1" :id "3212344" :description "The most active of all the dresses" :img (js/require "./images/Active_Dress_1.jpg")}
-                      {:name "Floral Dress" :name "option2" :id "3212345" :description "Pritty pritty flowers, i like flowers." :img (js/require "./images/Floral_Dress_1.jpg")}
-                      {:name "Pattern Shirt" :name "option3" :id "3212346" :description "Cool design bro... much like." :img (js/require "./images/Pattern_Shirt_1.jpg")}
-                      {:name "Cotton Top" :name "option4" :id "3212347" :description "Cotton... Mostly." :img (js/require "./images/Cotton_Top_1.jpg")}]))]))
+              (cycle [{:name "Active Dress" :option-name "option1" :id "3212344" :description "The most active of all the dresses" :img (js/require "./images/Active_Dress_1.jpg")}
+                      {:name "Floral Dress" :option-name "option2" :id "3212345" :description "Pritty pritty flowers, i like flowers." :img (js/require "./images/Floral_Dress_1.jpg")}
+                      {:name "Pattern Shirt" :option-name "option3" :id "3212346" :description "Cool design bro... much like." :img (js/require "./images/Pattern_Shirt_1.jpg")}
+                      {:name "Cotton Top" :option-name "option4" :id "3212347" :description "Cotton... Mostly." :img (js/require "./images/Cotton_Top_1.jpg")}]))]))
 
 
 (defn init []
