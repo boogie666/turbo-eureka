@@ -32,7 +32,6 @@
       (let [[val c] (alts! [input closer])]
         (when-not (or (= c closer) (nil? val))
           (try
-            (println val)
             (some-> @webview (.postMessage val))
             (catch :default e
               (.trace js/console e)))
@@ -54,11 +53,6 @@
                        :on-message #(a/put! output %)}]])
        :component-will-unmount
          (fn [_] (a/put! closer :close) (a/close! closer))})))
-
-
-
-
-
 
 (defn selection-view [action-channel]
   (let [drag-model (atom {:dragging? false
@@ -87,8 +81,6 @@
 
               [view {:style (-> s/selection-view :details)}
                 [text (:description item)]]]))))))
-
-
 
 (defn list-view-item [action-channel item]
   [touchable-opacity {:on-press #(a/put! action-channel [:list-item-view/select item])}
