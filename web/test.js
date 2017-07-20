@@ -11,9 +11,8 @@ ReactNativeComms.addReactNativeEventListener(function(e){
   el("messages").appendChild(newEl);
   el("messages").appendChild(document.createElement("br"));
 
-  el("box").style.left = Math.round(e.data.x) + "px";
-  el("box").style.top = Math.round(e.data.y) + "px";
-
+  el("box").style.left = Math.round(e.data.position.x) + "px";
+  el("box").style.top = Math.round(e.data.position.y) + "px";
 });
 
 el("btn").addEventListener("click", function(){

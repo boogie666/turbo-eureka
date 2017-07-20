@@ -10,7 +10,7 @@
                                                            ValueXY PanResponder DataSource]])
   (:require-macros [cljs.core.async.macros :as a :refer [go go-loop alt!]]))
 
-
+(enable-console-print!)
 
 (defn web-3d-view [style input-chan output-chan]
   (let [webview (atom nil)
