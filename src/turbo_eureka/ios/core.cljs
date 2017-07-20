@@ -32,6 +32,7 @@
       (let [[val c] (alts! [input closer])]
         (when-not (or (= c closer) (nil? val))
           (try
+            (println val)
             (some-> @webview (.postMessage val))
             (catch :default e
               (.trace js/console e)))
@@ -68,7 +69,8 @@
                                                 :onPanResponderMove (animated-event #js[nil, #js{:dx (.-x (:pan @drag-model)) :dy (.-y (:pan @drag-model))}])
                                                 :onPanResponderRelease #(let [drop-position {:x (-> % .-nativeEvent .-pageX) :y (-> % .-nativeEvent .-pageY)}
                                                                               drop-event {:item (:selected-item @m/model) :at drop-position}]
-                                                                          (a/put! action-channel [:selection-view/drop-item drop-event]))})]
+                                                                          (a/put! action-channel [:selection-view/drop-item drop-event])
+                                                                          (.start (animated-spring (:pan @drag-model) #js {:toValue {:x 0 :y 0}})))})]
 
     (fn [action-channel]
       (let [dragging? (:dragging? @drag-model)
