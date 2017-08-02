@@ -78,10 +78,8 @@
 (defn create-pan-responder [drag-model]
   (.create PanResponder
      #js{:onPanResponderStart #(swap! drag-model merge {:dragging? true})
-         :onPanResponderEnd #(do (println "end dragging")
-                                 (swap! drag-model merge {:dragging? false
-                                                          :current-item nil})
-                                 (println @drag-model))
+         :onPanResponderEnd #(swap! drag-model merge {:dragging? false
+                                                      :current-item nil})
          :onStartShouldSetPanResponder (constantly true)
          :onPanResponderMove
             (animated-event [nil {:dx (.-x (:pan @drag-model)) :dy (.-y (:pan @drag-model))}])
