@@ -9,7 +9,9 @@
 
 (defonce web-input-events (a/chan))
 
-(do @m/model)
+(defn dispatch! [action]
+  (a/put! action-channel action))
+
 
 (defmulti process-action! (fn [[type action]] type))
 

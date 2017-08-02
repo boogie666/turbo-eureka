@@ -56,7 +56,7 @@
 
 
             [web-view {:ref #(reset! webview %)
-                       :source {:uri "http://10.0.1.28:9090/ui/new_3d.html?id=fixture1"}
+                       :source {:uri "web/index.html"}
                        :bounces false
                        :scroll-enabled false
                        :on-message #(a/put! output %)}]
@@ -70,64 +70,77 @@
        :component-will-unmount
          (fn [_] (a/put! closer :close) (a/close! closer))})))
 
-(defn selection-view [action-channel]
-  (let [drag-model (atom {:dragging? false
-                          :pan (new ValueXY)})
-        panResponder (.create PanResponder #js{:onPanResponderStart #(swap! drag-model merge {:dragging? true})
-                                                :onPanResponderEnd #(swap! drag-model merge {:dragging? false})
-                                                :onStartShouldSetPanResponder (constantly true)
-                                                :onPanResponderMove (animated-event #js[nil, #js{:dx (.-x (:pan @drag-model)) :dy (.-y (:pan @drag-model))}])
-                                                :onPanResponderRelease #(let [drop-position {:x (-> % .-nativeEvent .-pageX) :y (-> % .-nativeEvent .-pageY)}
-                                                                              drop-event {:item (:selected-item @m/model) :at drop-position}]
-                                                                          (a/put! action-channel [:selection-view/drop-item drop-event])
-                                                                          (.start (animated-spring (:pan @drag-model) #js {:toValue {:x 0 :y 0}})))})]
 
-    (fn [action-channel]
-      (let [dragging? (:dragging? @drag-model)
-            pan (:pan @drag-model)]
-        (when (-> @m/model :selected-item)
-          (let [item (some-> @m/model :selected-item)]
-            [view {:style (-> s/selection-view :main)}
+(defn create-drag-model []
+  (atom {:dragging? false
+         :pan (comp/value-xy)}))
+
+(defn create-pan-responder [drag-model]
+  (.create PanResponder
+     #js{:onPanResponderStart #(swap! drag-model merge {:dragging? true})
+         :onPanResponderEnd #(do (println "end dragging")
+                                 (swap! drag-model merge {:dragging? false
+                                                          :current-item nil})
+                                 (println @drag-model))
+         :onStartShouldSetPanResponder (constantly true)
+         :onPanResponderMove
+            (animated-event [nil {:dx (.-x (:pan @drag-model)) :dy (.-y (:pan @drag-model))}])
+         :onPanResponderRelease
+            #(let [drop-position {:x (-> % .-nativeEvent .-pageX) :y (-> % .-nativeEvent .-pageY)}
+                   drop-event    {:item (:selected-item @m/model) :at drop-position}]
+               (c/dispatch! [:selection-view/drop-item drop-event])
+               (comp/set-value-xy! (:pan @drag-model) {:x 0 :y 0})
+               (swap! drag-model merge {:dragging? false
+                                        :current-item nil}))}))
+
+(defn selection-view []
+  (let [drag-model   (create-drag-model)
+        panResponder (create-pan-responder drag-model)]
+    (fn []
+      (when (-> @m/model :selected-item)
+        (let [item (some-> @m/model :selected-item)]
+          [view {:style (-> s/selection-view :main)}
+
+            [animated-view (merge (js->clj (.-panHandlers panResponder))
+                                  {:style [(.getLayout (:pan @drag-model))
+                                           (-> s/selection-view :draggable-item)]})
               [view {:style (-> s/selection-view :item)}
-                  [animated-view
-                    (merge (js->clj (.-panHandlers panResponder)) (when dragging? {:style [(.getLayout pan) {:position "absolute"}]}))
-                    [view {:style (-> s/selection-view :handle)}
-                      [image {:style (-> s/selection-view :image) :source (:img item)}]
-                      [text (:name item)]]]]
+                [view {:style (-> s/selection-view :handle)}
+                  [image {:style (-> s/selection-view :image) :source (:img item)}]
+                  [text (:name item)]]]]
+            [text {:style (-> s/selection-view :details)} (:description item)]])))))
 
-              [view {:style (-> s/selection-view :details)}
-                [text (:description item)]]]))))))
-
-(defn list-view-item [action-channel item]
-  [touchable-opacity {:on-press #(a/put! action-channel [:list-item-view/select item])}
-    [view {:style s/list-view-item}
-      [image {:style s/list-view-item-image :source (:img item)}]
-      [text {:style s/list-view-item-text} (:name item)]]])
+(defn list-view-item [item]
+    [touchable-opacity {:on-press #(c/dispatch! [:list-item-view/select item])}
+      [view {:style s/list-view-item}
+        [image {:style s/list-view-item-image :source (:img item)}]
+        [text {:style s/list-view-item-text} (:name item)]]])
 
 (defn list-view []
-  (let [dataSource (new DataSource #js{:rowHasChanged not=})]
+  (let [dataSource (comp/data-source {:rowHasChanged not=})]
     (fn []
       (let [items-loaded? (:products-loaded? @m/model)
             items         (:products @m/model)]
-          (if-not items-loaded?
-            [view {:style s/list-view-loading}
-              [activity-indicator]]
-            (let [ds (.cloneWithRows dataSource (clj->js items))]
-              [comp/list-view {:style s/list-view
-                               :dataSource ds
-                               :renderRow #(r/as-element [list-view-item c/action-channel (js->clj % :keywordize-keys true)])}]))))))
+        (if-not items-loaded?
+          [view {:style s/list-view-loading}
+            [activity-indicator]]
+          (let [ds (comp/clone-ds-with-rows dataSource items)]
+            [comp/list-view
+              {:style s/list-view
+               :dataSource ds
+               :renderRow #(r/as-element [list-view-item (js->clj % :keywordize-keys true)])}]))))))
 
 (defn app-root []
-  [view {:flex 1}
+  [view {:style {:flex 1}}
     [view {:style s/main-view}
       [list-view]
       [web-3d-view {:style s/web-3d-view} c/web-input-events c/action-channel]]
-    [selection-view c/action-channel]])
+    [selection-view]])
 
 
 ;;fake a backend call
 (go (<! (a/timeout 1000))
-    (>! c/action-channel
+    (c/dispatch!
         [:async/loaded-products
            (take 100
               (cycle [{:name "Active Dress" :option-name "option2" :id "3212344" :description "The most active of all the dresses" :img (js/require "./images/Active_Dress_1.jpg")}
