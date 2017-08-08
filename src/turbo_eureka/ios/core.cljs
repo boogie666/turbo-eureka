@@ -13,7 +13,6 @@
 (enable-console-print!)
 
 
-
 (defn web-view-event [{:keys [event] :as raw-event}]
   (if (nil? event)
     [:web-3d-view/bad-messages-from-viewer raw-event]
