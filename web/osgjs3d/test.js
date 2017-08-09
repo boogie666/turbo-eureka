@@ -69,7 +69,7 @@ var main = function() {
 
     function addModelWithOffset(model, offset){
         var mt = new osg.MatrixTransform();
-        osg.mat4.rotateZ(mt.getMatrix(), mt.getMatrix(), -Math.PI + offset/10);
+        osg.mat4.rotateZ(mt.getMatrix(), mt.getMatrix(), -Math.PI);
 
         mt.addChild(model);
 
@@ -81,7 +81,7 @@ var main = function() {
 
           for(var i = 1; i < models.length ; i++){
             var option = models[i];
-            for(var j = 0; j < 100 ; j++){
+            for(var j = 0; j < 500 ; j++){
               addModelWithOffset(option, j);
             }
           }
