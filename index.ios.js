@@ -1,2 +1,2 @@
 var modules={'react-native': require('react-native'), 'react': require('react')};modules['./images/Active_Dress_1.jpg']=require('./images/Active_Dress_1.jpg');modules['./images/Cotton_Top_1.jpg']=require('./images/Cotton_Top_1.jpg');modules['./images/Floral_Dress_1.jpg']=require('./images/Floral_Dress_1.jpg');modules['./images/Pattern_Shirt_1.jpg']=require('./images/Pattern_Shirt_1.jpg');modules['./images/cljs.png']=require('./images/cljs.png');
-require('figwheel-bridge').withModules(modules).start('TurboEureka','ios','localhost');
+require('figwheel-bridge').withModules(modules).start('TurboEureka','ios','10.0.1.28');

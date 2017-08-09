@@ -5,6 +5,39 @@ var osg = OSG.osg;
 var osgDB = OSG.osgDB;
 var osgViewer = OSG.osgViewer;
 
+window._config = {
+    ms: 0.0,
+    fps: 0.0,
+    loadTime : 0
+};
+
+var FPSUpdateCallback = function(config) {
+    this._config = config;
+};
+FPSUpdateCallback.prototype = {
+    update: function(node, nv) {
+        var currentTime = 1000.0 * nv.getFrameStamp().getDeltaTime();
+        var frameNumber = nv.getFrameStamp().getFrameNumber();
+        if (frameNumber % 60 === 1) {
+            this._config.ms = currentTime;
+        } else {
+            this._config.ms += (currentTime - this._config.ms) / frameNumber;
+        }
+        this._config.fps = 1000.0 / currentTime;
+
+        //
+        node.traverse(nv);
+    }
+};
+
+var initDatGUI = function() {
+    this._gui = new window.dat.GUI();
+
+    this._gui.add(this._config, 'fps').listen();
+    this._gui.add(this._config, 'ms').listen();
+    this._gui.add(this._config, 'loadTime').listen();
+}.bind(window);
+
 var main = function() {
     // The 3D canvas.
     var canvas = document.getElementById('View');
@@ -41,19 +74,22 @@ var main = function() {
 
         rootNode.addChild(mt);
     }
+    var loadTime = new Date().getTime();
     Promise.all([fixture, option1, option2, option3, option4]).then(function(models) {
           addModel(models[0]);
 
           for(var i = 1; i < models.length ; i++){
             var option = models[i];
-            for(var j = 0; j < 10 ; j++){
+            for(var j = 0; j < 100 ; j++){
               addModelWithOffset(option, j);
             }
           }
 
           viewer.getManipulator().computeHomePosition();
+          rootNode.addUpdateCallback(new FPSUpdateCallback(window._config));
+          window._config.loadTime = new Date().getTime() - loadTime;
     });
-
+    initDatGUI();
 };
 
 window.addEventListener('load', main, true);
