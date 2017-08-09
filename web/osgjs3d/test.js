@@ -43,6 +43,7 @@ var main = function() {
     var canvas = document.getElementById('View');
     var viewer;
 
+    var loadTime = new Date().getTime();
     // The viewer
     viewer = new osgViewer.Viewer(canvas);
     viewer.init();
@@ -74,7 +75,7 @@ var main = function() {
 
         rootNode.addChild(mt);
     }
-    var loadTime = new Date().getTime();
+
     Promise.all([fixture, option1, option2, option3, option4]).then(function(models) {
           addModel(models[0]);
 

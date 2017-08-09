@@ -135,8 +135,8 @@
                     :on-value-change #(swap! m/model assoc :selected-view (if (= :osgjs current-view) :threejs :osgjs))}]
       [view {:style s/main-view}
         (if (= :osgjs current-view)
-          [web-3d-view "web/osgjs/index.html" {:style s/web-3d-view} c/web-input-events c/action-channel]
-          [web-3d-view "web/threejs/new_3d.html" {:style s/web-3d-view} c/web-input-events c/action-channel])]
+          [web-3d-view "web/osgjs3d/index.html" {:style s/web-3d-view} c/web-input-events c/action-channel]
+          [web-3d-view "web/threejs3d/new_3d.html" {:style s/web-3d-view} c/web-input-events c/action-channel])]
 
       [selection-view]]))
 
