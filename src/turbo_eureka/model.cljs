@@ -4,4 +4,5 @@
 
 (defonce model (atom { :products nil
                        :products-loaded? false
-                       :selected-item nil}))
+                       :selected-item nil
+                       :selected-view :osgjs}))

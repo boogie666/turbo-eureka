@@ -20,7 +20,7 @@
       [event-type raw-event])))
 
 
-(defn web-3d-view [style input-chan output-chan]
+(defn web-3d-view [source style input-chan output-chan]
   (let [webview (atom nil)
         input (a/chan 1 (comp (map (fn [message] {:data message}))
                               (map clj->js)
@@ -47,7 +47,7 @@
 
     (r/create-class
       {:reagent-render
-         (fn [style input-chan output-chan]
+         (fn [source style input-chan output-chan]
            [view (merge style {:on-layout #(let [values (-> % .-nativeEvent .-layout)
                                                  layout {:layout {:x (.-x values) :y (.-y values)
                                                                   :width (.-width values) :height (.-height values)}}]
@@ -55,7 +55,7 @@
 
 
             [web-view {:ref #(reset! webview %)
-                       :source {:uri "web/index.html"}
+                       :source {:uri source}
                        :bounces false
                        :scroll-enabled false
                        :on-message #(a/put! output %)}]
@@ -128,11 +128,17 @@
                :renderRow #(r/as-element [list-view-item (js->clj % :keywordize-keys true)])}]))))))
 
 (defn app-root []
-  [view {:style {:flex 1}}
-    [view {:style s/main-view}
-      [list-view]
-      [web-3d-view {:style s/web-3d-view} c/web-input-events c/action-channel]]
-    [selection-view]])
+  (let [current-view (:selected-view @m/model)]
+    [view {:style {:flex 1}}
+      [text current-view]
+      [comp/switch {:value (= :osgjs current-view)
+                    :on-value-change #(swap! m/model assoc :selected-view (if (= :osgjs current-view) :threejs :osgjs))}]
+      [view {:style s/main-view}
+        (if (= :osgjs current-view)
+          [web-3d-view "web/index.html" {:style s/web-3d-view} c/web-input-events c/action-channel]
+          [web-3d-view "web/index.html" {:style s/web-3d-view} c/web-input-events c/action-channel])]
+
+      [selection-view]]))
 
 
 ;;fake a backend call

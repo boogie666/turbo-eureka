@@ -16,6 +16,8 @@
 (def activity-indicator (r/adapt-react-class (.-ActivityIndicator ReactNative)))
 (def animated-view (r/adapt-react-class (-> ReactNative .-Animated .-View)))
 
+(def switch (r/adapt-react-class (-> ReactNative .-Switch)))
+
 (defn animated-event [props]
   (let [event-fn (-> ReactNative .-Animated .-event)]
     (event-fn (clj->js props))))
